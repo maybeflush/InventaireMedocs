@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medicine Inventory Tracker</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
+
+      .content {
+        padding: 30px;
+      }
+
+      .setup-warning {
+        background: #fef3c7;
+        border: 2px solid #f59e0b;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .setup-warning h3 {
+        color: #b45309;
+        margin-bottom: 10px;
+      }
+
+      .setup-warning p {
+        color: #92400e;
+        margin-bottom: 8px;
+        line-height: 1.6;
+      }
+
+      .setup-warning code {
+        background: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #dc2626;
+      }
+
+      .firebase-config {
+        background: #f8f9ff;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+      }
+
+      .firebase-config h3 {
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      .config-inputs {
+        display: grid;
+        gap: 10px;
+      }
+
+      .config-input {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .config-input label {
+        font-size: 0.9em;
+        font-weight: 600;
+        color: #555;
+      }
+
+      .config-input input {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9em;
+      }
+
+      /* Authentication Styles */
+      .auth-section {
+        background: #f0f7ff;
+        border: 2px solid #3b82f6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .auth-section h3 {
+        color: #3b82f6;
+        margin-bottom: 15px;
+      }
+
+      .auth-form {
+        display: grid;
+        gap: 15px;
+      }
+
+      .user-info {
+        background: #d1fae5;
+        border: 2px solid #10b981;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: none;
+      }
+
+      .user-info h3 {
+        color: #065f46;
+        margin-bottom: 10px;
+      }
+
+      .toolbar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-secondary {
+        background: #f8f9ff;
+        color: #667eea;
+        border: 2px solid #667eea;
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-success {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-success:hover:not(:disabled) {
+        background: #059669;
+        transform: translateY(-2px);
+      }
+
+      .btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        background: #dc2626;
+        transform: translateY(-2px);
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-label {
+        padding: 12px 24px;
+        background: #f8f9ff;
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .file-label:hover {
+        background: #667eea;
+        color: white;
+      }
+
+      .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 600;
+      }
+
+      .status-indicator.connected {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .status-indicator.disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .status-dot.connected {
+        background: #10b981;
+      }
+
+      .status-dot.disconnected {
+        background: #ef4444;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      h2 {
+        color: #667eea;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 40px;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+      }
+
+      td {
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:hover {
+        background-color: #f8f9ff;
+      }
+
+      .medicine-name {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .date-checkboxes {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: #f8f9ff;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+
+      .checkbox-item:hover {
+        background: #e8ebff;
+      }
+
+      .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #667eea;
+      }
+
+      .checkbox-item label {
+        cursor: pointer;
+        font-size: 0.9em;
+        color: #555;
+        user-select: none;
+      }
+
+      .quantity-badge {
+        background: #667eea;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        margin-left: 5px;
+      }
+
+      .total-value {
+        font-size: 1.2em;
+        font-weight: 700;
+        color: #667eea;
+        padding: 8px 16px;
+        background: #f8f9ff;
+        border-radius: 8px;
+        display: inline-block;
+      }
+
+      .data-section {
+        margin-top: 40px;
+        padding-top: 40px;
+        border-top: 2px solid #e0e0e0;
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        animation: slideIn 0.3s ease-out;
+        z-index: 1000;
+      }
+
+      .notification.success {
+        background: #10b981;
+      }
+
+      .notification.error {
+        background: #ef4444;
+      }
+
+      .notification.info {
+        background: #3b82f6;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .instructions {
+        background: #f8f9ff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+      }
+
+      .instructions p {
+        margin-bottom: 8px;
+        color: #555;
+      }
+
+      .instructions strong {
+        color: #667eea;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #667eea;
+        font-size: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>💊 Medicine Inventory Tracker</h1>
+        <p>Cloud-powered with Firebase Authentication</p>
+      </header>
+
+      <div class="content">
+        <div class="setup-warning" id="setupWarning">
+          <h3>🔧 Firebase Setup Required</h3>
+          <p>
+            <strong>Step 1:</strong> Go to
+            <a href="https://console.firebase.google.com/" target="_blank"
+              >Firebase Console</a
+            >
+            and create a new project
+          </p>
+          <p>
+            <strong>Step 2:</strong> Enable Firestore Database (Start in test
+            mode for development)
+          </p>
+          <p><strong>Step 3:</strong> Enable Authentication → Email/Password</p>
+          <p>
+            <strong>Step 4:</strong> Go to Project Settings → General → Your
+            apps → Add web app
+          </p>
+          <p>
+            <strong>Step 5:</strong> Copy your Firebase config values and paste
+            them below
+          </p>
+        </div>
+
+        <div class="firebase-config" id="firebaseConfig">
+          <h3>Firebase Configuration</h3>
+          <div class="config-inputs">
+            <div class="config-input">
+              <label>API Key</label>
+              <input type="text" id="apiKey" placeholder="AIzaSy..." />
+            </div>
+            <div class="config-input">
+              <label>Auth Domain</label>
+              <input
+                type="text"
+                id="authDomain"
+                placeholder="your-project.firebaseapp.com"
+              />
+            </div>
+            <div class="config-input">
+              <label>Project ID</label>
+              <input type="text" id="projectId" placeholder="your-project-id" />
+            </div>
+            <div class="config-input">
+              <label>Storage Bucket</label>
+              <input
+                type="text"
+                id="storageBucket"
+                placeholder="your-project.appspot.com"
+              />
+            </div>
+            <div class="config-input">
+              <label>Messaging Sender ID</label>
+              <input
+                type="text"
+                id="messagingSenderId"
+                placeholder="123456789"
+              />
+            </div>
+            <div class="config-input">
+              <label>App ID</label>
+              <input type="text" id="appId" placeholder="1:123456789:web:..." />
+            </div>
+          </div>
+          <button
+            class="btn btn-primary"
+            id="connectBtn"
+            style="margin-top: 15px"
+          >
+            🔌 Connect to Firebase
+          </button>
+        </div>
+
+        <div class="auth-section" id="authSection" style="display: none">
+          <h3>🔐 Login to Access Inventory</h3>
+          <div class="auth-form">
+            <div class="config-input">
+              <label>Email</label>
+              <input
+                type="email"
+                id="loginEmail"
+                placeholder="your@email.com"
+              />
+            </div>
+            <div class="config-input">
+              <label>Password</label>
+              <input
+                type="password"
+                id="loginPassword"
+                placeholder="Your password"
+              />
+            </div>
+            <button class="btn btn-primary" id="loginBtn">🔑 Login</button>
+          </div>
+        </div>
+
+        <div class="user-info" id="userInfo">
+          <h3>👤 User Information</h3>
+          <p>Logged in as: <span id="userEmail"></span></p>
+          <button
+            class="btn btn-danger"
+            id="logoutBtn"
+            style="margin-top: 10px"
+          >
+            🚪 Logout
+          </button>
+        </div>
+
+        <div class="toolbar">
+          <div class="status-indicator disconnected" id="statusIndicator">
+            <span class="status-dot disconnected"></span>
+            <span>Not Connected</span>
+          </div>
+
+          <label for="excelFile" class="file-label"> 📁 Import Excel </label>
+          <input type="file" id="excelFile" accept=".xlsx,.xls" disabled />
+
+          <button class="btn btn-success" id="exportBtn" disabled>
+            📥 Export Summary
+          </button>
+
+          <button class="btn btn-secondary" id="resetBtn" disabled>
+            🔄 Reset Data
+          </button>
+        </div>
+
+        <div class="instructions">
+          <p>
+            <strong>Excel Format:</strong> Your Excel file should have columns:
+            Medicine, Expiration Date, Quantity
+          </p>
+          <p>
+            <strong>Storage:</strong> Your data is stored in Firebase Firestore
+            and syncs across all devices
+          </p>
+        </div>
+
+        <div id="mainContent" style="display: none">
+          <h2>Summary</h2>
+          <table id="summaryTable">
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Date</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+          </table>
+
+          <div class="data-section">
+            <h2>Data Sheet</h2>
+            <table id="dataTable">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Expiration Date</th>
+                  <th>Quantity</th>
+                </tr>
+              </thead>
+              <tbody id="dataBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getFirestore,
+        doc,
+        setDoc,
+        getDoc,
+        collection,
+        onSnapshot,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+      let db = null;
+      let auth = null;
+      let currentUser = null;
+
+      // Default data sheet
+      let dataSheet = [
+        {
+          medicine: "Paracetamol",
+          expirationDate: "01/06/2025",
+          quantity: 100,
+        },
+        {
+          medicine: "Paracetamol",
+          expirationDate: "01/07/2025",
+          quantity: 200,
+        },
+        { medicine: "Ibuprofen", expirationDate: "01/01/2025", quantity: 120 },
+        { medicine: "Ibuprofen", expirationDate: "01/01/2026", quantity: 200 },
+        { medicine: "Ibuprofen", expirationDate: "01/01/2027", quantity: 200 },
+      ];
+
+      // Load saved config from localStorage
+      function loadSavedConfig() {
+        const saved = localStorage.getItem("firebaseConfig");
+        if (saved) {
+          try {
+            const config = JSON.parse(saved);
+            document.getElementById("apiKey").value = config.apiKey || "";
+            document.getElementById("authDomain").value =
+              config.authDomain || "";
+            document.getElementById("projectId").value = config.projectId || "";
+            document.getElementById("storageBucket").value =
+              config.storageBucket || "";
+            document.getElementById("messagingSenderId").value =
+              config.messagingSenderId || "";
+            document.getElementById("appId").value = config.appId || "";
+            return config;
+          } catch (e) {
+            console.error("Error loading saved config:", e);
+          }
+        }
+        return null;
+      }
+
+      // Save config to localStorage
+      function saveConfig(config) {
+        localStorage.setItem("firebaseConfig", JSON.stringify(config));
+      }
+
+      // Connect to Firebase
+      document
+        .getElementById("connectBtn")
+        .addEventListener("click", async () => {
+          const config = {
+            apiKey: document.getElementById("apiKey").value.trim(),
+            authDomain: document.getElementById("authDomain").value.trim(),
+            projectId: document.getElementById("projectId").value.trim(),
+            storageBucket: document
+              .getElementById("storageBucket")
+              .value.trim(),
+            messagingSenderId: document
+              .getElementById("messagingSenderId")
+              .value.trim(),
+            appId: document.getElementById("appId").value.trim(),
+          };
+
+          if (!config.apiKey || !config.projectId) {
+            showNotification(
+              "Please fill in at least API Key and Project ID",
+              "error"
+            );
+            return;
+          }
+
+          try {
+            const app = initializeApp(config);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            saveConfig(config);
+            updateConnectionStatus(true);
+            document.getElementById("setupWarning").style.display = "none";
+            document.getElementById("firebaseConfig").style.display = "none";
+            document.getElementById("authSection").style.display = "block";
+
+            showNotification("Connected to Firebase!", "success");
+
+            // Set up auth state listener
+            onAuthStateChanged(auth, (user) => {
+              if (user) {
+                currentUser = user;
+                showUserInfo(user);
+                enableAppFeatures();
+                loadFromFirebase();
+              } else {
+                currentUser = null;
+                hideUserInfo();
+                disableAppFeatures();
+              }
+            });
+          } catch (error) {
+            showNotification(
+              "Firebase connection error: " + error.message,
+              "error"
+            );
+            console.error("Firebase error:", error);
+          }
+        });
+
+      // Authentication functions
+      document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("loginEmail").value.trim();
+          const password = document
+            .getElementById("loginPassword")
+            .value.trim();
+
+          if (!email || !password) {
+            showNotification("Please enter email and password", "error");
+            return;
+          }
+
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+            showNotification("Login successful!", "success");
+          } catch (error) {
+            showNotification("Login error: " + error.message, "error");
+          }
+        });
+
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          try {
+            await signOut(auth);
+            showNotification("Logged out successfully", "info");
+          } catch (error) {
+            showNotification("Logout error: " + error.message, "error");
+          }
+        });
+
+      function showUserInfo(user) {
+        document.getElementById("userEmail").textContent = user.email;
+        document.getElementById("userInfo").style.display = "block";
+        document.getElementById("authSection").style.display = "none";
+      }
+
+      function hideUserInfo() {
+        document.getElementById("userInfo").style.display = "none";
+        document.getElementById("authSection").style.display = "block";
+
+        // Clear form fields
+        document.getElementById("loginEmail").value = "";
+        document.getElementById("loginPassword").value = "";
+      }
+
+      function enableAppFeatures() {
+        document.getElementById("mainContent").style.display = "block";
+        document.getElementById("excelFile").disabled = false;
+        document.getElementById("exportBtn").disabled = false;
+        document.getElementById("resetBtn").disabled = false;
+      }
+
+      function disableAppFeatures() {
+        document.getElementById("mainContent").style.display = "none";
+        document.getElementById("excelFile").disabled = true;
+        document.getElementById("exportBtn").disabled = true;
+        document.getElementById("resetBtn").disabled = true;
+      }
+
+      // Update connection status
+      function updateConnectionStatus(connected) {
+        const indicator = document.getElementById("statusIndicator");
+        if (connected) {
+          indicator.className = "status-indicator connected";
+          indicator.innerHTML =
+            '<span class="status-dot connected"></span><span>Connected</span>';
+        } else {
+          indicator.className = "status-indicator disconnected";
+          indicator.innerHTML =
+            '<span class="status-dot disconnected"></span><span>Not Connected</span>';
+        }
+      }
+
+      // Show notification
+      function showNotification(message, type = "success") {
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
+
+      // Firebase functions - Updated to use user-specific documents
+      async function saveToFirebase() {
+        if (!db || !currentUser) return;
+        try {
+          await setDoc(doc(db, "medicines", currentUser.uid), {
+            data: dataSheet,
+            updatedAt: new Date().toISOString(),
+          });
+        } catch (error) {
+          showNotification(
+            "Error saving to Firebase: " + error.message,
+            "error"
+          );
+        }
+      }
+
+      async function saveSelectionsToFirebase() {
+        if (!db || !currentUser) return;
+        const selections = {};
+        document.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          const key = `${cb.dataset.medicine}-${cb.dataset.date}`;
+          selections[key] = cb.checked;
+        });
+        try {
+          await setDoc(doc(db, "selections", currentUser.uid), {
+            selections: selections,
+            updatedAt: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error("Error saving selections:", error);
+        }
+      }
+
+      async function loadFromFirebase() {
+        if (!db || !currentUser) return;
+        try {
+          const dataDoc = await getDoc(doc(db, "medicines", currentUser.uid));
+          if (dataDoc.exists()) {
+            dataSheet = dataDoc.data().data;
+            showNotification("Data loaded from Firebase", "info");
+          }
+
+          await renderSummary();
+          renderDataTable();
+        } catch (error) {
+          showNotification(
+            "Error loading from Firebase: " + error.message,
+            "error"
+          );
+          await renderSummary();
+          renderDataTable();
+        }
+      }
+
+      // Group data by medicine
+      function groupByMedicine(data) {
+        const grouped = {};
+        data.forEach((item) => {
+          if (!grouped[item.medicine]) {
+            grouped[item.medicine] = [];
+          }
+          grouped[item.medicine].push({
+            date: item.expirationDate,
+            quantity: item.quantity,
+          });
+        });
+        return grouped;
+      }
+
+      // Calculate total for a medicine
+      function calculateTotal(medicine) {
+        let total = 0;
+        const checkboxes = document.querySelectorAll(
+          `input[data-medicine="${medicine}"]:checked`
+        );
+        checkboxes.forEach((cb) => {
+          total += parseInt(cb.dataset.quantity);
+        });
+        return total;
+      }
+
+      // Update total display
+      function updateTotal(medicine) {
+        const total = calculateTotal(medicine);
+        const totalCell = document.getElementById(`total-${medicine}`);
+        if (totalCell) {
+          totalCell.textContent = total;
+        }
+        saveSelectionsToFirebase();
+      }
+
+      // Render summary table
+      async function renderSummary() {
+        const grouped = groupByMedicine(dataSheet);
+        const summaryBody = document.getElementById("summaryBody");
+        summaryBody.innerHTML = "";
+
+        let savedSelections = {};
+        if (db && currentUser) {
+          try {
+            const selectionsDoc = await getDoc(
+              doc(db, "selections", currentUser.uid)
+            );
+            if (selectionsDoc.exists()) {
+              savedSelections = selectionsDoc.data().selections;
+            }
+          } catch (error) {
+            console.error("Error loading selections:", error);
+          }
+        }
+
+        Object.keys(grouped).forEach((medicine) => {
+          const row = document.createElement("tr");
+
+          // Medicine name
+          const medicineCell = document.createElement("td");
+          medicineCell.className = "medicine-name";
+          medicineCell.textContent = medicine;
+
+          // Date checkboxes
+          const dateCell = document.createElement("td");
+          const checkboxContainer = document.createElement("div");
+          checkboxContainer.className = "date-checkboxes";
+
+          grouped[medicine].forEach((item, index) => {
+            const checkboxItem = document.createElement("div");
+            checkboxItem.className = "checkbox-item";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.id = `${medicine}-${index}`;
+            checkbox.dataset.medicine = medicine;
+            checkbox.dataset.date = item.date;
+            checkbox.dataset.quantity = item.quantity;
+
+            // Restore saved selection
+            const key = `${medicine}-${item.date}`;
+            if (savedSelections[key]) {
+              checkbox.checked = true;
+            }
+
+            checkbox.addEventListener("change", () => updateTotal(medicine));
+
+            const label = document.createElement("label");
+            label.htmlFor = `${medicine}-${index}`;
+            label.innerHTML = `${item.date} <span class="quantity-badge">${item.quantity}</span>`;
+
+            checkboxItem.appendChild(checkbox);
+            checkboxItem.appendChild(label);
+            checkboxContainer.appendChild(checkboxItem);
+          });
+
+          dateCell.appendChild(checkboxContainer);
+
+          // Total
+          const totalCell = document.createElement("td");
+          const totalValue = document.createElement("span");
+          totalValue.className = "total-value";
+          totalValue.id = `total-${medicine}`;
+          totalValue.textContent = calculateTotal(medicine);
+          totalCell.appendChild(totalValue);
+
+          row.appendChild(medicineCell);
+          row.appendChild(dateCell);
+          row.appendChild(totalCell);
+          summaryBody.appendChild(row);
+        });
+
+        // Update all totals after rendering
+        Object.keys(grouped).forEach((medicine) => {
+          updateTotal(medicine);
+        });
+      }
+
+      // Render data table
+      function renderDataTable() {
+        const dataBody = document.getElementById("dataBody");
+        dataBody.innerHTML = "";
+
+        dataSheet.forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td class="medicine-name">${item.medicine}</td>
+                    <td>${item.expirationDate}</td>
+                    <td><span class="quantity-badge">${item.quantity}</span></td>
+                `;
+          dataBody.appendChild(row);
+        });
+      }
+
+      // Excel Import
+      document
+        .getElementById("excelFile")
+        .addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            try {
+              const data = new Uint8Array(event.target.result);
+              const workbook = XLSX.read(data, { type: "array" });
+
+              // Get first sheet
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+
+              // Convert to JSON
+              const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+              dataSheet = jsonData
+                .map((row) => ({
+                  medicine: String(row.Medicine || row.medicine || "").trim(),
+                  expirationDate: String(
+                    row["Expiration Date"] ||
+                      row.expirationDate ||
+                      row["expiration date"] ||
+                      ""
+                  ).trim(),
+                  quantity: parseInt(row.Quantity || row.quantity || 0),
+                }))
+                .filter(
+                  (item) =>
+                    item.medicine && item.expirationDate && item.quantity
+                );
+
+              if (dataSheet.length === 0) {
+                showNotification("No valid data found in Excel file", "error");
+                return;
+              }
+
+              await saveToFirebase();
+              await renderSummary();
+              renderDataTable();
+              showNotification("Excel file imported successfully!", "success");
+            } catch (error) {
+              showNotification(
+                "Error reading Excel file: " + error.message,
+                "error"
+              );
+            }
+          };
+
+          reader.readAsArrayBuffer(file);
+          e.target.value = "";
+        });
+
+      // Export Summary as Excel
+      document.getElementById("exportBtn").addEventListener("click", () => {
+        const grouped = groupByMedicine(dataSheet);
+        const exportData = [];
+
+        // Header
+        exportData.push(["Medicine", "Selected Dates", "Total"]);
+
+        // Data
+        Object.keys(grouped).forEach((medicine) => {
+          const selectedDates = [];
+          const checkboxes = document.querySelectorAll(
+            `input[data-medicine="${medicine}"]:checked`
+          );
+          checkboxes.forEach((cb) => {
+            selectedDates.push(`${cb.dataset.date} (${cb.dataset.quantity})`);
+          });
+
+          exportData.push([
+            medicine,
+            selectedDates.join("; "),
+            calculateTotal(medicine),
+          ]);
+        });
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Summary");
+
+        // Generate Excel file and download
+        XLSX.writeFile(
+          wb,
+          `medicine-summary-${new Date().toISOString().split("T")[0]}.xlsx`
+        );
+
+        showNotification("Summary exported successfully!", "success");
+      });
+
+      // Reset Data
+      document
+        .getElementById("resetBtn")
+        .addEventListener("click", async () => {
+          if (
+            confirm("Are you sure you want to reset all data and selections?")
+          ) {
+            dataSheet = [
+              {
+                medicine: "Paracetamol",
+                expirationDate: "01/06/2025",
+                quantity: 100,
+              },
+              {
+                medicine: "Paracetamol",
+                expirationDate: "01/07/2025",
+                quantity: 200,
+              },
+              {
+                medicine: "Ibuprofen",
+                expirationDate: "01/01/2025",
+                quantity: 120,
+              },
+              {
+                medicine: "Ibuprofen",
+                expirationDate: "01/01/2026",
+                quantity: 200,
+              },
+              {
+                medicine: "Ibuprofen",
+                expirationDate: "01/01/2027",
+                quantity: 200,
+              },
+            ];
+
+            await saveToFirebase();
+            await renderSummary();
+            renderDataTable();
+            showNotification("Data reset successfully!", "info");
+          }
+        });
+
+      // Auto-connect if config exists
+      const savedConfig = loadSavedConfig();
+      if (savedConfig && savedConfig.apiKey && savedConfig.projectId) {
+        document.getElementById("connectBtn").click();
+      }
+    </script>
+  </body>
+</html>
