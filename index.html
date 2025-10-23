@@ -437,6 +437,18 @@
       }
     </style>
   </head>
+  <script src="/env.js"></script>
+  <!-- generated at deploy-time -->
+  <script>
+    // env.js sets window.__ENV
+    const firebaseConfig = window.__ENV?.FIREBASE_CONFIG;
+    if (!firebaseConfig) {
+      console.warn("Firebase config not loaded yet.");
+    } else {
+      // use firebaseConfig to initialize firebase app
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
   <body>
     <div class="container">
       <header>
