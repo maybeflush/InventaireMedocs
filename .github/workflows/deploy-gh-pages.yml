@@ -1,0 +1,83 @@
+name: Build and deploy to GitHub Pages
+
+# Trigger on pushes to main (change branch if you use master or another branch)
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write        # required by actions that push to gh-pages
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Optional: install node and build if your project has a build step.
+      # If you don't need a build step you can leave this as-is.
+      - name: Setup Node.js (optional, used if package.json exists)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build (if you have a build step)
+        id: build-step
+        run: |
+          if [ -f package.json ]; then
+            echo "package.json found — running npm ci && npm run build (if defined)"
+            npm ci
+            if npm run | grep -q "build"; then
+              npm run build
+            else
+              echo "No build script defined; skipping build."
+            fi
+          else
+            echo "No package.json — skipping Node build."
+          fi
+
+      # Create a clean 'site' directory with the files to publish.
+      - name: Prepare publish directory
+        run: |
+          rm -rf site
+          mkdir -p site
+          # Copy repository files into `site`, excluding the .github workflow directory and node_modules
+          rsync -av --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='site' ./ site/
+          # If you used a build step that outputs to ./build or ./dist, prefer copying that instead:
+          if [ -d build ]; then
+            rm -rf site
+            mkdir -p site
+            cp -R build/* site/
+          elif [ -d dist ]; then
+            rm -rf site
+            mkdir -p site
+            cp -R dist/* site/
+          fi
+
+      - name: Write env.js from GitHub Secret
+        env:
+          FIREBASE_CONFIG_JSON: ${{ secrets.FIREBASE_CONFIG_JSON }}
+        run: |
+          # env.js will be deployed with the site; it is generated at deploy-time only.
+          cat > site/env.js <<'EOF'
+          // Generated at deploy-time by GitHub Actions.
+          // Do not commit this file to source control.
+          window.__ENV = window.__ENV || {};
+          window.__ENV.FIREBASE_CONFIG = JSON.parse(`$FIREBASE_CONFIG_JSON`);
+          EOF
+
+      - name: Show summary (for debug)
+        run: |
+          echo "Files to publish (top lines):"
+          ls -la site | sed -n '1,20p'
+
+      - name: Deploy to GitHub Pages (gh-pages branch)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
