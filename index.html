@@ -10,7 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <style>
-      /* ... (TOUT VOTRE CSS RESTE IDENTIQUE) ... */
+      /* ... (TOUT VOTRE CSS RESTE IDENTIQUE SAUF LES AJOUTS CI-DESSOUS) ... */
       * {
         margin: 0;
         padding: 0;
@@ -218,11 +218,13 @@
         vertical-align: middle;
       }
 
-      td input[type="number"] {
-        width: 80px;
+      td input[type="number"],
+      td input[type="text"] {
+        width: 100%;
         padding: 6px;
         border: 1px solid #ccc;
         border-radius: 4px;
+        box-sizing: border-box;
       }
 
       tr:last-child td {
@@ -259,19 +261,39 @@
         border-top: 2px solid #e0e0e0;
       }
 
-      .delete-btn {
-        background: #ef4444;
-        color: white;
+      .action-btn {
         border: none;
-        padding: 4px 8px;
+        padding: 6px 10px;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 0.8em;
-        transition: background 0.3s;
+        font-size: 0.9em;
+        transition: all 0.3s;
+        margin-right: 5px;
+        color: white;
       }
-
+      .edit-btn {
+        background: #3b82f6;
+      }
+      .edit-btn:hover {
+        background: #2563eb;
+      }
+      .delete-btn {
+        background: #ef4444;
+      }
       .delete-btn:hover {
         background: #dc2626;
+      }
+      .save-btn {
+        background: #10b981;
+      }
+      .save-btn:hover {
+        background: #059669;
+      }
+      .cancel-btn {
+        background: #6b7280;
+      }
+      .cancel-btn:hover {
+        background: #4b5563;
       }
 
       .notification {
@@ -401,7 +423,7 @@
     <div class="container">
       <header>
         <h1>💊 Suivi d'Inventaire de Médicaments</h1>
-        <p>Gérez votre inventaire de médicaments de mission</p>
+        <p>Gérez un inventaire de médicaments de mission</p>
       </header>
 
       <div class="content">
@@ -425,12 +447,19 @@
         <div class="instructions">
           <p>
             <strong>Synchronisation :</strong> Les données sont chargées depuis
-            le cloud. Cliquez sur <strong>Enregistrer sur le Cloud</strong> pour
-            sauvegarder vos modifications.
+            le cloud à chaque ouverture.
           </p>
           <p>
-            <strong>Colonnes Excel à importer :</strong> Medicaments, Date
-            d'Exp., Reste Mission Prec., Achat Prévu
+            <strong>Utiliser un tableur :</strong> On peut effacer toutes les
+            données puis importer un fichier Excel
+          </p>
+
+          <strong>Colonnes Excel à importer :</strong> Medicaments, Date d'Exp.,
+          Reste Mission Prec., Achat Prévu
+
+          <p>
+            <strong>Enregistrer sur le Cloud :</strong>Cliquez pour sauvegarder
+            vos modifications sur le Cloud avant de quitter la page.
           </p>
         </div>
 
@@ -529,6 +558,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
       // <!--- !! IMPORTANT : COLLEZ VOTRE CONFIGURATION FIREBASE CI-DESSOUS !! --->
+
       const firebaseConfig = {
         apiKey: "AIzaSyD6xTZs-zlPQLD6WQebmrLuPvAfKxCKr_4",
         authDomain: "medocsanne.firebaseapp.com",
@@ -547,7 +577,6 @@
 
       let dataSheet = []; // Les données seront chargées depuis Firebase
 
-      // ... (Toutes les autres variables et fonctions comme parseDate, showNotification, etc. restent les mêmes) ...
       // Sorting State
       let summarySortOrder = "asc";
       let dataSheetSortKey = "medicine";
@@ -690,7 +719,7 @@
           dataSheet[index].quantityAfterMission = newQAM;
           dataSheet[index].consumption = quantityBefore - newQAM;
         }
-        renderDataTable();
+        rerenderAll(); // Re-render to update the consumption column
         showNotification(
           "Consommation mise à jour localement. Pensez à sauvegarder.",
           "info"
@@ -700,46 +729,71 @@
       function renderDataTable() {
         const dataBody = document.getElementById("dataBody");
         dataBody.innerHTML = "";
+
         const indexedData = dataSheet.map((item, index) => ({
-          item,
+          ...item,
           originalIndex: index,
         }));
+
         indexedData.sort((a, b) => {
           let valA, valB;
           if (dataSheetSortKey === "expirationDate") {
-            valA = parseDate(a.item.expirationDate);
-            valB = parseDate(b.item.expirationDate);
+            valA = parseDate(a.expirationDate);
+            valB = parseDate(b.expirationDate);
           } else {
-            valA = a.item.medicine.toLowerCase();
-            valB = b.item.medicine.toLowerCase();
+            valA = a.medicine.toLowerCase();
+            valB = b.medicine.toLowerCase();
           }
           if (valA < valB) return dataSheetSortOrder === "asc" ? -1 : 1;
           if (valA > valB) return dataSheetSortOrder === "asc" ? 1 : -1;
           return 0;
         });
 
-        indexedData.forEach(({ item, originalIndex }) => {
+        indexedData.forEach((item) => {
+          const { originalIndex } = item;
           const row = document.createElement("tr");
-          const consumptionValue =
-            item.consumption !== null
-              ? `<span class="quantity-badge consumption-badge">${item.consumption}</span>`
-              : "";
-          const qamValue =
-            item.quantityAfterMission !== null ? item.quantityAfterMission : "";
-          row.innerHTML = `
-            <td class="medicine-name">${item.medicine}</td>
-            <td>${item.expirationDate}</td>
-            <td>${item.lastMissionRemainder}</td>
-            <td>${item.plannedPurchase}</td>
-            <td><span class="quantity-badge">${item.quantityBeforeMission}</span></td>
-            <td>${consumptionValue}</td>
-            <td>
-                <input type="number" id="qam-${originalIndex}" value="${qamValue}" min="0" onchange="updateConsumption(${originalIndex})"/>
-            </td>
-            <td>
-                <button class="delete-btn" onclick="deleteMedicine(${originalIndex})">🗑️ Supprimer</button>
-            </td>
-          `;
+
+          if (item.isEditing) {
+            // --- EDIT MODE ROW ---
+            row.innerHTML = `
+                <td><input type="text" id="edit-med-${originalIndex}" value="${item.medicine}"></td>
+                <td><input type="text" id="edit-exp-${originalIndex}" value="${item.expirationDate}"></td>
+                <td><input type="number" id="edit-rem-${originalIndex}" value="${item.lastMissionRemainder}" oninput="updateQteAvantMission(${originalIndex})"></td>
+                <td><input type="number" id="edit-pur-${originalIndex}" value="${item.plannedPurchase}" oninput="updateQteAvantMission(${originalIndex})"></td>
+                <td><span class="quantity-badge" id="edit-qte-${originalIndex}">${item.quantityBeforeMission}</span></td>
+                <td>inconnue</td>
+                <td></td>
+                <td>
+                    <button class="action-btn save-btn" onclick="saveEdit(${originalIndex})">💾</button>
+                    <button class="action-btn cancel-btn" onclick="cancelEdit(${originalIndex})">❌</button>
+                </td>
+            `;
+          } else {
+            // --- NORMAL ROW ---
+            const consumptionValue =
+              item.consumption !== null
+                ? `<span class="quantity-badge consumption-badge">${item.consumption}</span>`
+                : "inconnue";
+            const qamValue =
+              item.quantityAfterMission !== null
+                ? item.quantityAfterMission
+                : "";
+            row.innerHTML = `
+                <td class="medicine-name">${item.medicine}</td>
+                <td>${item.expirationDate}</td>
+                <td>${item.lastMissionRemainder}</td>
+                <td>${item.plannedPurchase}</td>
+                <td><span class="quantity-badge">${item.quantityBeforeMission}</span></td>
+                <td>${consumptionValue}</td>
+                <td>
+                    <input type="number" id="qam-${originalIndex}" value="${qamValue}" min="0" onchange="updateConsumption(${originalIndex})"/>
+                </td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="startEdit(${originalIndex})">✏️ Éditer</button>
+                    <button class="action-btn delete-btn" onclick="deleteMedicine(${originalIndex})">🗑️ Supprimer</button>
+                </td>
+            `;
+          }
           dataBody.appendChild(row);
         });
       }
@@ -753,6 +807,56 @@
             "info"
           );
         }
+      }
+
+      // --- EDIT FUNCTIONS ---
+      function startEdit(index) {
+        dataSheet[index].isEditing = true;
+        renderDataTable();
+      }
+
+      function cancelEdit(index) {
+        delete dataSheet[index].isEditing;
+        renderDataTable();
+      }
+
+      function saveEdit(index) {
+        const newMed = document
+          .getElementById(`edit-med-${index}`)
+          .value.trim();
+        const newExp = document
+          .getElementById(`edit-exp-${index}`)
+          .value.trim();
+        const newRem =
+          parseInt(document.getElementById(`edit-rem-${index}`).value) || 0;
+        const newPur =
+          parseInt(document.getElementById(`edit-pur-${index}`).value) || 0;
+
+        if (!newMed || !newExp) {
+          showNotification(
+            "Le nom et la date ne peuvent pas être vides.",
+            "error"
+          );
+          return;
+        }
+
+        dataSheet[index].medicine = newMed;
+        dataSheet[index].expirationDate = newExp;
+        dataSheet[index].lastMissionRemainder = newRem;
+        dataSheet[index].plannedPurchase = newPur;
+        dataSheet[index].quantityBeforeMission = newRem + newPur;
+        delete dataSheet[index].isEditing;
+
+        rerenderAll();
+        showNotification("Ligne mise à jour. Pensez à sauvegarder.", "info");
+      }
+
+      function updateQteAvantMission(index) {
+        const rem =
+          parseInt(document.getElementById(`edit-rem-${index}`).value) || 0;
+        const pur =
+          parseInt(document.getElementById(`edit-pur-${index}`).value) || 0;
+        document.getElementById(`edit-qte-${index}`).textContent = rem + pur;
       }
 
       document
@@ -859,7 +963,6 @@
 
             const importedData = jsonData
               .map((row) => {
-                // Cherche les nouveaux noms de colonnes, puis les anciens comme alternative
                 const lastMissionRemainder = parseInt(
                   row["Reste Mission Prec."] ||
                     row["Last Mission Remainder"] ||
@@ -964,9 +1067,13 @@
       }
 
       function saveDataToFirebase() {
+        // Crée une copie des données sans la propriété temporaire 'isEditing'
+        const dataToSave = JSON.parse(JSON.stringify(dataSheet));
+        dataToSave.forEach((item) => delete item.isEditing);
+
         const inventoryRef = database.ref("inventory");
         inventoryRef
-          .set(dataSheet)
+          .set(dataToSave)
           .then(() => {
             showNotification(
               "Données enregistrées sur le cloud avec succès !",
