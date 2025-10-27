@@ -959,13 +959,12 @@
           }
           const text = await response.text();
           console.log(text);
-          if (text) {
-            // Vérifie si le fichier n'est pas vide
-            const jsonData = JSON.parse(text);
-            if (Array.isArray(jsonData)) {
-              dataSheet = jsonData;
-              showNotification("Données chargées depuis data.json", "info");
-            }
+          if (text && text.trim() !== '') { 
+              const jsonData = JSON.parse(text);
+              if (Array.isArray(jsonData)) {
+                  dataSheet = jsonData;
+                  showNotification("Données chargées depuis data.json", "info");
+              }
           }
         } catch (error) {
           console.error("Erreur de chargement initial:", error.message);
