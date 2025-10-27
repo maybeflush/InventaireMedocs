@@ -953,7 +953,7 @@
 
       async function loadDataFromLocalFile() {
         try {
-          const response = await fetch("./data.json");
+          const response = await fetch("data.json");
           if (!response.ok) {
             throw new Error("Fichier data.json non trouvé ou erreur réseau.");
           }
