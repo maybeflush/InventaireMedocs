@@ -429,8 +429,8 @@
             sauvegarder vos modifications.
           </p>
           <p>
-            <strong>Excel :</strong> Vous pouvez toujours importer/exporter des
-            fichiers Excel pour un traitement local.
+            <strong>Colonnes Excel à importer :</strong> Medicaments, Date
+            d'Exp., Reste Mission Prec., Achat Prévu
           </p>
         </div>
 
@@ -529,15 +529,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
       // <!--- !! IMPORTANT : COLLEZ VOTRE CONFIGURATION FIREBASE CI-DESSOUS !! --->
-      // const firebaseConfig = {
-      //   apiKey: "VOS-INFOS-ICI",
-      //   authDomain: "VOS-INFOS-ICI",
-      //   databaseURL: "VOS-INFOS-ICI",
-      //   projectId: "VOS-INFOS-ICI",
-      //   storageBucket: "VOS-INFOS-ICI",
-      //   messagingSenderId: "VOS-INFOS-ICI",
-      //   appId: "VOS-INFOS-ICI"
-      // };
       const firebaseConfig = {
         apiKey: "AIzaSyD6xTZs-zlPQLD6WQebmrLuPvAfKxCKr_4",
         authDomain: "medocsanne.firebaseapp.com",
@@ -865,17 +856,27 @@
             const jsonData = XLSX.utils.sheet_to_json(
               workbook.Sheets[workbook.SheetNames[0]]
             );
+
             const importedData = jsonData
               .map((row) => {
+                // Cherche les nouveaux noms de colonnes, puis les anciens comme alternative
                 const lastMissionRemainder = parseInt(
-                  row["Last Mission Remainder"] || 0
+                  row["Reste Mission Prec."] ||
+                    row["Last Mission Remainder"] ||
+                    0
                 );
-                const plannedPurchase = parseInt(row["Planned Purchase"] || 0);
-                const medicine = String(row.Medicine || "").trim();
-                const expirationDate = String(
-                  row["Expiration Date"] || ""
+                const plannedPurchase = parseInt(
+                  row["Achat Prévu"] || row["Planned Purchase"] || 0
+                );
+                const medicine = String(
+                  row["Medicaments"] || row.Medicine || ""
                 ).trim();
+                const expirationDate = String(
+                  row["Date d'Exp."] || row["Expiration Date"] || ""
+                ).trim();
+
                 if (!medicine || !expirationDate) return null;
+
                 return {
                   medicine,
                   expirationDate,
@@ -914,13 +915,13 @@
 
       document.getElementById("exportDataBtn").addEventListener("click", () => {
         const exportData = dataSheet.map((item) => ({
-          Médicament: item.medicine,
-          "Date d'Expiration": item.expirationDate,
-          "Reste Mission Précédente": item.lastMissionRemainder,
+          Medicaments: item.medicine,
+          "Date d'Exp.": item.expirationDate,
+          "Reste Mission Prec.": item.lastMissionRemainder,
           "Achat Prévu": item.plannedPurchase,
-          "Quantité Avant Mission": item.quantityBeforeMission,
+          "Qte Avant Mission": item.quantityBeforeMission,
           Consommation: item.consumption,
-          "Quantité Après Mission": item.quantityAfterMission,
+          "Qte Apres Mission": item.quantityAfterMission,
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
@@ -952,13 +953,10 @@
         renderDataTable();
       }
 
-      // --- NOUVELLES FONCTIONS DE CHARGEMENT/SAUVEGARDE FIREBASE ---
-
       function loadDataFromFirebase() {
         const inventoryRef = database.ref("inventory");
         inventoryRef.on("value", (snapshot) => {
           const data = snapshot.val();
-          // Firebase retourne null si aucune donnée n'existe
           dataSheet = data ? data : [];
           showNotification("Données synchronisées depuis le cloud.", "info");
           rerenderAll();
@@ -983,13 +981,10 @@
           });
       }
 
-      // Lier la nouvelle fonction de sauvegarde au bouton
       document
         .getElementById("saveDataBtn")
         .addEventListener("click", saveDataToFirebase);
 
-      // --- DÉMARRAGE DE L'APPLICATION ---
-      // Charge les données depuis Firebase au lieu d'un fichier local
       loadDataFromFirebase();
     </script>
   </body>
