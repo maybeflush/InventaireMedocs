@@ -4,7 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Suivi d'Inventaire de Médicaments</title>
+
+    <!-- Scripts Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
     <style>
+      /* ... (TOUT VOTRE CSS RESTE IDENTIQUE) ... */
       * {
         margin: 0;
         padding: 0;
@@ -400,8 +406,8 @@
 
       <div class="content">
         <div class="toolbar">
-          <button class="btn btn-info" id="saveJsonBtn">
-            💾 Enregistrer les Données
+          <button class="btn btn-info" id="saveDataBtn">
+            💾 Enregistrer sur le Cloud
           </button>
 
           <label for="excelFile" class="file-label"> 📤 Importer Excel </label>
@@ -418,22 +424,13 @@
 
         <div class="instructions">
           <p>
-            <strong>Étape 1 :</strong> Les données sont automatiquement chargées
-            depuis le fichier `data.json`.
+            <strong>Synchronisation :</strong> Les données sont chargées depuis
+            le cloud. Cliquez sur <strong>Enregistrer sur le Cloud</strong> pour
+            sauvegarder vos modifications.
           </p>
           <p>
-            <strong>Colonnes Excel :</strong> Medicine, Expiration Date, Last
-            Mission Remainder, Planned Purchase
-          </p>
-          <p>
-            <strong>Étape 2 :</strong> Quand une mission est terminée,
-            remplissez la colonne <strong>Qté Après Mission</strong> dans le
-            tableau ci-dessous. La consommation sera calculée automatiquement.
-          </p>
-          <p>
-            <strong>Étape 3 :</strong> Cliquez sur
-            <strong>Enregistrer les Données</strong> pour télécharger le fichier
-            mis à jour.
+            <strong>Excel :</strong> Vous pouvez toujours importer/exporter des
+            fichiers Excel pour un traitement local.
           </p>
         </div>
 
@@ -531,27 +528,35 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-      let dataSheet = [
-        {
-          medicine: "Aspirine",
-          expirationDate: "01/07/2027",
-          lastMissionRemainder: 20,
-          plannedPurchase: 100,
-          quantityBeforeMission: 120,
-          consumption: null,
-          quantityAfterMission: null,
-        },
-        {
-          medicine: "Paracétamol",
-          expirationDate: "01/07/2025",
-          lastMissionRemainder: 0,
-          plannedPurchase: 100,
-          quantityBeforeMission: 100,
-          consumption: null,
-          quantityAfterMission: null,
-        },
-      ];
+      // <!--- !! IMPORTANT : COLLEZ VOTRE CONFIGURATION FIREBASE CI-DESSOUS !! --->
+      // const firebaseConfig = {
+      //   apiKey: "VOS-INFOS-ICI",
+      //   authDomain: "VOS-INFOS-ICI",
+      //   databaseURL: "VOS-INFOS-ICI",
+      //   projectId: "VOS-INFOS-ICI",
+      //   storageBucket: "VOS-INFOS-ICI",
+      //   messagingSenderId: "VOS-INFOS-ICI",
+      //   appId: "VOS-INFOS-ICI"
+      // };
+      const firebaseConfig = {
+        apiKey: "AIzaSyD6xTZs-zlPQLD6WQebmrLuPvAfKxCKr_4",
+        authDomain: "medocsanne.firebaseapp.com",
+        databaseURL:
+          "https://medocsanne-default-rtdb.europe-west1.firebasedatabase.app/",
+        projectId: "medocsanne",
+        storageBucket: "medocsanne.firebasestorage.app",
+        messagingSenderId: "1080882906327",
+        appId: "1:1080882906327:web:b0d790d3a1638d8aa2dc92",
+      };
 
+      // Initialiser Firebase
+      firebase.initializeApp(firebaseConfig);
+      const database = firebase.database();
+      // <!--- FIN DE LA CONFIGURATION FIREBASE --->
+
+      let dataSheet = []; // Les données seront chargées depuis Firebase
+
+      // ... (Toutes les autres variables et fonctions comme parseDate, showNotification, etc. restent les mêmes) ...
       // Sorting State
       let summarySortOrder = "asc";
       let dataSheetSortKey = "medicine";
@@ -695,7 +700,10 @@
           dataSheet[index].consumption = quantityBefore - newQAM;
         }
         renderDataTable();
-        showNotification("Consommation mise à jour !", "info");
+        showNotification(
+          "Consommation mise à jour localement. Pensez à sauvegarder.",
+          "info"
+        );
       }
 
       function renderDataTable() {
@@ -749,7 +757,10 @@
         if (confirm("Êtes-vous sûr de vouloir supprimer cette entrée ?")) {
           dataSheet.splice(index, 1);
           rerenderAll();
-          showNotification("Entrée supprimée avec succès.", "info");
+          showNotification(
+            "Entrée supprimée localement. Pensez à sauvegarder.",
+            "info"
+          );
         }
       }
 
@@ -790,7 +801,10 @@
           document.getElementById("lastMissionRemainder").value = "";
           document.getElementById("plannedPurchase").value = "";
 
-          showNotification("Médicament ajouté avec succès !", "success");
+          showNotification(
+            "Médicament ajouté localement. Pensez à sauvegarder.",
+            "info"
+          );
         });
 
       document
@@ -840,23 +854,6 @@
           }
         });
 
-      document.getElementById("saveJsonBtn").addEventListener("click", () => {
-        const jsonString = JSON.stringify(dataSheet, null, 2);
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `data.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showNotification(
-          "Fichier de données JSON prêt à être téléchargé.",
-          "success"
-        );
-      });
-
       document.getElementById("excelFile").addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -900,7 +897,10 @@
             }
             dataSheet.push(...importedData);
             rerenderAll();
-            showNotification("Fichier Excel importé avec succès !", "success");
+            showNotification(
+              "Fichier Excel importé. Pensez à sauvegarder.",
+              "info"
+            );
           } catch (error) {
             showNotification(
               `Erreur de lecture du fichier Excel : ${error.message}`,
@@ -940,7 +940,10 @@
         ) {
           dataSheet = [];
           rerenderAll();
-          showNotification("Toutes les données ont été effacées.", "info");
+          showNotification(
+            "Données effacées localement. Pensez à sauvegarder.",
+            "info"
+          );
         }
       });
 
@@ -949,43 +952,45 @@
         renderDataTable();
       }
 
-      // --- NOUVELLES FONCTIONS D'INITIALISATION ET DE SAUVEGARDE ---
+      // --- NOUVELLES FONCTIONS DE CHARGEMENT/SAUVEGARDE FIREBASE ---
 
-      async function loadDataFromLocalFile() {
-        try {
-          const response = await fetch("data.json");
-          if (!response.ok) {
-            throw new Error("Fichier data.json non trouvé ou erreur réseau.");
-          }
-          const text = await response.text();
-          //console.log(text);
-          if (text && text.trim() !== '') { 
-              const jsonData = JSON.parse(text);
-              if (Array.isArray(jsonData)) {
-                  dataSheet = jsonData;
-                  showNotification("Données chargées depuis data.json", "info");
-              }
-          }
-        } catch (error) {
-          console.error("Erreur de chargement initial:", error.message);
-          showNotification(
-            "Le fichier data.json est vide, utilisation des données par défaut.",
-            "error"
-          );
-        } finally {
-          rerenderAll(); // Affiche les données (chargées ou par défaut)
-        }
+      function loadDataFromFirebase() {
+        const inventoryRef = database.ref("inventory");
+        inventoryRef.on("value", (snapshot) => {
+          const data = snapshot.val();
+          // Firebase retourne null si aucune donnée n'existe
+          dataSheet = data ? data : [];
+          showNotification("Données synchronisées depuis le cloud.", "info");
+          rerenderAll();
+        });
       }
 
-      window.addEventListener("beforeunload", function (e) {
-        const message = "Pensez à Sauvergarder Vos Données !";
-        e.preventDefault();
-        e.returnValue = message;
-        return message;
-      });
+      function saveDataToFirebase() {
+        const inventoryRef = database.ref("inventory");
+        inventoryRef
+          .set(dataSheet)
+          .then(() => {
+            showNotification(
+              "Données enregistrées sur le cloud avec succès !",
+              "success"
+            );
+          })
+          .catch((error) => {
+            showNotification(
+              "Erreur de sauvegarde : " + error.message,
+              "error"
+            );
+          });
+      }
+
+      // Lier la nouvelle fonction de sauvegarde au bouton
+      document
+        .getElementById("saveDataBtn")
+        .addEventListener("click", saveDataToFirebase);
 
       // --- DÉMARRAGE DE L'APPLICATION ---
-      loadDataFromLocalFile();
+      // Charge les données depuis Firebase au lieu d'un fichier local
+      loadDataFromFirebase();
     </script>
   </body>
 </html>
